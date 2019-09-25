@@ -27,8 +27,8 @@
 #include "Picorv32.h"
 #include "Picorv32Impl.h"
 #include "Vtestbench_testbench.h"
-#include "Vtestbench_picorv32__C1_EF1_EH1.h"
 
+#include "Vtestbench_picorv32__C1_EF1_EH1_EE1.h"
 
 using std::chrono::duration;
 using std::chrono::system_clock;

@@ -134,8 +134,14 @@ Picorv32Impl::clearTrapAndRestartInstruction ()
     mCpu->testbench->uut->clearTrapAndContinue ();
     // loop until the processor has come out of the trap and changed pc to
     // the value we wrote above
+    clockStep ();
+    clockStep ();
+
+    mCpu->testbench->uut->actuallyClearTrap ();
+
     do
     {
+      clockStep ();
       clockStep ();
     }
     while (prev_pc == readProgramAddr ());
@@ -156,6 +162,42 @@ bool
 Picorv32Impl::step ()
 {
   uint32_t prev_pc = readProgramAddr ();
+  uint32_t insn;
+  uint8_t *raw = (uint8_t *)&insn;
+
+  // Read memory for debug
+  for (int i = 0; i < 4; ++i)
+    raw[i] = readMem (prev_pc + i);
+
+  //  fprintf (stderr, "pc@0x%x: 0x%x\n", prev_pc, insn);
+
+  // Check if we are on a breakpoint (which is generally true if
+  // we are currently in a trapped state)
+
+  if (haveTrap ())
+    {
+      //      clockStep ();
+      // Yes, this is a horrid mess, I know...
+
+      mCpu->testbench->uut->clearTrapAndContinue ();
+      mCpu->testbench->setReset ();
+      uint32_t pc = mCpu->testbench->uut->readPc ();
+
+      if ((raw[0] & 0x3) == 0x3)
+	mCpu->testbench->uut->writePc (pc + 4);
+      else
+	mCpu->testbench->uut->writePc (pc + 2);
+
+      clockStep ();
+      clockStep ();
+
+      mCpu->testbench->uut->actuallyClearTrap ();
+      mCpu->testbench->clearReset ();
+
+      clockStep ();
+      clockStep ();
+    }
+
   do
   {
     clockStep ();

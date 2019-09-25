@@ -52,6 +52,8 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
+#define COMPACT_INSN_P(X) ((X & 0x3) != 0x3)
+
 //! This is the length of time we spend running before leaving the model
 //! to check for an interrupt from GDB.  This must always be less than one
 //! second, as that is the smallest timeout a user can set (using the
@@ -1471,10 +1473,6 @@ GdbServerImpl::rspRemoveMatchpoint ()
   std::size_t len;			// Matchpoint length
   uint8_t  *instrVec;			// Instruction as byte vector
 
-  pkt->packStr ("");
-  rsp->putPkt (pkt);
-  return;
-
   // Break out the instruction
   string ui32Fmt = SCNx32;
   string fmt = "z%ld,%" + ui32Fmt + ",%ld";
@@ -1651,10 +1649,6 @@ GdbServerImpl::rspInsertMatchpoint ()
   std::size_t len;			// Matchpoint length
   uint8_t  *instrVec;			// Instruction as byte vector
 
-  pkt->packStr ("");
-  rsp->putPkt (pkt);
-  return;
-
   // Break out the instruction
   string ui32Fmt = SCNx32;
   string fmt = "Z%ld,%" + ui32Fmt + ",%ld";
@@ -1699,10 +1693,10 @@ GdbServerImpl::rspInsertMatchpoint ()
 
       // Little-endian, so least significant byte is at "little" address.
 
-      instr = BREAK_INSTR;
+      instr = (len == 4 ? BREAK_INSTR : 0x9002);
       instrVec = reinterpret_cast<uint8_t *> (&instr);
 
-      if (4 != cpu->write (addr, instrVec, 4))
+      if (len != cpu->write (addr, instrVec, len))
 	cerr << "Warning: Failed to write BREAK instruction" << endl;
 
       if (traceFlags->traceRsp())
